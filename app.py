@@ -395,4 +395,34 @@ def main():
         det_disp = df_disp[df_disp["Ticker"] == pick].iloc[0]
         det_raw  = df[df["Ticker"] == pick].iloc[0]
 
-        st.markdown(f"**{det_raw['Nombre']}**  \nPaís: {det_raw['País']}  \nIndustria
+        st.markdown(f"**{det_raw['Nombre']}**  \nPaís: {det_raw['País']}  \nIndustria: {det_raw['Industria']}")
+
+        cA, cB, cC = st.columns(3)
+        with cA:
+            st.metric("Precio", f"${det_raw['Precio']:,.2f}" if det_raw['Precio'] else "N/D")
+            st.metric("P/E", det_raw["P/E"])
+            st.metric("P/B", det_raw["P/B"])
+        with cB:
+            st.metric("ROIC", det_disp["ROIC"])
+            st.metric("WACC", det_disp["WACC"])
+            st.metric("EVA", f"{det_raw['EVA']:,.0f}" if pd.notnull(det_raw["EVA"]) else "N/D")
+        with cC:
+            st.metric("ROE", det_disp["ROE"])
+            st.metric("Dividend Yield", det_disp["Dividend Yield %"])
+            st.metric("Debt/Eq", det_raw["Debt/Eq"])
+
+        st.subheader("ROIC vs WACC")
+        if pd.notnull(det_raw["ROIC"]) and pd.notnull(det_raw["WACC"]):
+            fig, ax = plt.subplots(figsize=(5, 3.5))
+            comp = pd.DataFrame({"ROIC": [det_raw["ROIC"]*100], "WACC": [det_raw["WACC"]*100]}, index=[pick])
+            comp.plot(kind="bar", ax=ax, rot=0, legend=False, color=["green" if det_raw["ROIC"]>det_raw["WACC"] else "red", "gray"])
+            ax.set_ylabel("%")
+            auto_ylim(ax, comp)
+            st.pyplot(fig); plt.close()
+            st.success("✅ Crea valor (ROIC > WACC)" if det_raw["ROIC"] > det_raw["WACC"] else "❌ Destruye valor (ROIC < WACC)")
+        else:
+            st.info("Datos insuficientes para comparar ROIC/WACC")
+
+# -------------------------------------------------------------
+if __name__ == "__main__":
+    main()
