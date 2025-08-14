@@ -242,7 +242,7 @@ def main():
 
         # copia para display con % formateados
         df_disp = df.copy()
-        for col in ["Dividend Yield %", "Payout Ratio", "ROA", "ROE", "Oper Margin", "Profit Margin", "WACC", "ROIC"]:
+        for col in ["Dividend Yield %", "Payout Ratio", "ROA", "ROE", "Oper Margin", "Profit Margin", "WACC", "ROIC", "EVA"]:
             df_disp[col] = df_disp[col].apply(lambda x: f"{x*100:,.2f}%" if pd.notnull(x) else "N/D")
 
         # =====================================================
