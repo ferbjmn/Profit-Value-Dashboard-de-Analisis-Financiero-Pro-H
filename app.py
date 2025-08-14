@@ -169,10 +169,7 @@ def obtener_datos_financieros(tk, Tc_def):
 
     return {
         "Ticker": tk,
-        "Nombre": name,
-        "País": country,
         "Sector": info.get("sector", "Unknown"),
-        "Industria": industry,
         "Precio": price,
         "P/E": info.get("trailingPE"),
         "P/B": info.get("priceToBook"),
