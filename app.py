@@ -160,11 +160,16 @@ def obtener_datos_financieros(tk, Tc_def):
     shares= info.get("sharesOutstanding")
     pfcf  = price / (fcf/shares) if (fcf and shares) else None
 
+    # <<< claves robustas para evitar None y que no se caigan del DataFrame >>>
+    nombre    = info.get("longName") or info.get("shortName") or info.get("displayName") or tk
+    pais      = info.get("country")  or info.get("countryCode") or "N/D"
+    industria = info.get("industry") or info.get("industryKey") or info.get("industryDisp") or "N/D"
+
     return {
         "Ticker": tk,
-        "Nombre": info.get("longName", "N/D"),
-        "País": info.get("country", "N/D"),
-        "Industria": info.get("industry", "N/D"),
+        "Nombre": nombre,
+        "País": pais,
+        "Industria": industria,
         "Sector": info.get("sector", "Unknown"),
         "Precio": price,
         "P/E": info.get("trailingPE"),
@@ -230,10 +235,18 @@ def main():
             if errs: st.table(pd.DataFrame(errs))
             return
 
+        # df base y copia para display
         df = sector_sorted(pd.DataFrame(datos))
         df_disp = df.copy()
+
+        # Formateo de porcentajes
         for col in ["Dividend Yield %", "Payout Ratio", "ROA", "ROE", "Oper Margin", "Profit Margin", "WACC", "ROIC"]:
             df_disp[col] = df_disp[col].apply(lambda x: f"{x*100:,.2f}%" if pd.notnull(x) else "N/D")
+
+        # Asegurar que las nuevas columnas nunca sean NaN/None
+        for c in ["Nombre", "País", "Industria"]:
+            if c in df_disp.columns:
+                df_disp[c] = df_disp[c].fillna("N/D").replace({None: "N/D", "": "N/D"})
 
         # =====================================================
         # Sección 1: Resumen General
@@ -246,8 +259,10 @@ def main():
             "Current Ratio", "Debt/Eq", "Oper Margin", "Profit Margin",
             "WACC", "ROIC", "EVA"
         ]
+        # Mostrar solo columnas existentes pero sin eliminar las 3 nuevas
+        cols_show = [c for c in resumen_cols if c in df_disp.columns]
         st.dataframe(
-            df_disp[resumen_cols].dropna(how='all', axis=1),
+            df_disp[cols_show],
             use_container_width=True,
             height=420
         )
