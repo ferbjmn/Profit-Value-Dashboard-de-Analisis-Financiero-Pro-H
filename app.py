@@ -1,9 +1,5 @@
 # -------------------------------------------------------------
 #  📊 DASHBOARD FINANCIERO AVANZADO
-#      • ROIC y WACC (Kd y tasa efectiva por empresa)
-#      • Resumen agrupado y ORDENADO automáticamente por Sector
-#      • Gráficos por SECTOR (con lotes de 10 para deuda y crecimiento)
-#      • Ejes Y AUTO-AJUSTADOS y SIN mínimos por sector
 # -------------------------------------------------------------
 import streamlit as st
 import pandas as pd
@@ -90,25 +86,20 @@ def sector_sorted(df):
     return df.sort_values(["SectorRank", "Sector", "Ticker"]).reset_index(drop=True)
 
 def auto_ylim(ax, values, pad=0.10):
-    """Ajuste automático del eje Y."""
     if isinstance(values, pd.DataFrame):
         arr = values.to_numpy(dtype="float64")
     else:
         arr = np.asarray(values, dtype="float64")
-
     arr = arr[np.isfinite(arr)]
     if arr.size == 0:
         return
-
     vmin = float(np.nanmin(arr))
     vmax = float(np.nanmax(arr))
-
     if vmax == vmin:
         ymin = vmin - abs(vmin)*pad - 1
         ymax = vmax + abs(vmax)*pad + 1
         ax.set_ylim(ymin, ymax)
         return
-
     if vmin >= 0:
         ymin = 0
         ymax = vmax * (1 + pad)
@@ -134,7 +125,6 @@ def obtener_datos_financieros(tk, Tc_def):
 
     beta  = info.get("beta", 1)
     ke    = calc_ke(beta)
-
     debt  = safe_first(seek_row(bs, ["Total Debt", "Long Term Debt"])) or info.get("totalDebt", 0)
     cash  = safe_first(seek_row(bs, [
         "Cash And Cash Equivalents",
@@ -142,23 +132,19 @@ def obtener_datos_financieros(tk, Tc_def):
         "Cash Cash Equivalents And Short Term Investments",
     ]))
     equity= safe_first(seek_row(bs, ["Common Stock Equity", "Total Stockholder Equity"]))
-
     interest = safe_first(seek_row(fin, ["Interest Expense"]))
     ebt      = safe_first(seek_row(fin, ["Ebt", "EBT"]))
     tax_exp  = safe_first(seek_row(fin, ["Income Tax Expense"]))
     ebit     = safe_first(seek_row(fin, ["EBIT", "Operating Income",
                                          "Earnings Before Interest and Taxes"]))
-
     kd   = calc_kd(interest, debt)
     tax  = tax_exp / ebt if ebt else Tc_def
     mcap = info.get("marketCap", 0)
     wacc = calc_wacc(mcap, debt, ke, kd, tax)
-
     nopat = ebit * (1 - tax) if ebit is not None else None
     invested = (equity or 0) + ((debt or 0) - (cash or 0))
     roic = nopat / invested if (nopat is not None and invested) else None
     eva  = (roic - wacc) * invested if all(v is not None for v in (roic, wacc, invested)) else None
-
     price = info.get("currentPrice")
     fcf   = safe_first(seek_row(cf, ["Free Cash Flow"]))
     shares= info.get("sharesOutstanding")
@@ -198,7 +184,6 @@ def obtener_datos_financieros(tk, Tc_def):
 # =============================================================
 def main():
     st.title("📊 Dashboard de Análisis Financiero Avanzado")
-
     with st.sidebar:
         st.header("⚙️ Configuración")
         t_in = st.text_area("Tickers (coma)", "HRL, AAPL, MSFT, ABT, O, XOM, KO, JNJ, CLX, CHD, CB, DDOG")
@@ -210,12 +195,10 @@ def main():
         Tc0 = st.number_input("Tax rate default (%)", 0.0, 50.0, 21.0)/100
 
     tickers = [t.strip().upper() for t in t_in.split(",") if t.strip()][:max_t]
-
     if st.button("🔍 Analizar", type="primary"):
         if not tickers:
             st.warning("Ingresa al menos un ticker")
             return
-
         datos, errs, bar = [], [], st.progress(0)
         for i, tk in enumerate(tickers, 1):
             try:
@@ -225,24 +208,28 @@ def main():
             bar.progress(i / len(tickers))
             time.sleep(1)
         bar.empty()
-
         if not datos:
             st.error("Sin datos válidos.")
             if errs: st.table(pd.DataFrame(errs))
             return
 
         df = sector_sorted(pd.DataFrame(datos))
-
         df_disp = df.copy()
+
+        # Formatear porcentajes
         for col in ["Dividend Yield %", "Payout Ratio", "ROA", "ROE", "Oper Margin", "Profit Margin", "WACC", "ROIC"]:
             df_disp[col] = df_disp[col].apply(lambda x: f"{x*100:,.2f}%" if pd.notnull(x) else "N/D")
+
+        # Asegurar valores por defecto
+        for col in ["Nombre", "País", "Industria"]:
+            df_disp[col] = df_disp[col].fillna("N/D")
 
         st.header("📋 Resumen General (agrupado por Sector)")
         resumen_cols = ["Ticker", "Nombre", "País", "Industria", "Sector", "Precio", "P/E", "P/B", "P/FCF",
                         "Dividend Yield %", "Payout Ratio", "ROA", "ROE",
                         "Current Ratio", "Debt/Eq", "Oper Margin", "Profit Margin",
                         "WACC", "ROIC", "EVA"]
-        st.dataframe(df_disp[resumen_cols].dropna(how='all', axis=1), use_container_width=True, height=420)
+        st.dataframe(df_disp[resumen_cols], use_container_width=True, height=420)
 
         if errs:
             st.subheader("🚫 Tickers con error")
