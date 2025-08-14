@@ -246,7 +246,7 @@ def main():
         # Sección 1: Resumen General
         # =====================================================
         st.header("📋 Resumen General (agrupado por Sector)")
-        resumen_cols = ["Ticker", "Nombre", "Sector", "Precio", "P/E", "P/B", "P/FCF",
+        resumen_cols = ["Ticker", "Sector", "Precio", "P/E", "P/B", "P/FCF",
                         "Dividend Yield %", "Payout Ratio", "ROA", "ROE",
                         "Current Ratio", "Debt/Eq", "Oper Margin", "Profit Margin",
                         "WACC", "ROIC", "EVA"]
