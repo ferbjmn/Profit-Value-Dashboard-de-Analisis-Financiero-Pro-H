@@ -169,7 +169,10 @@ def obtener_datos_financieros(tk, Tc_def):
 
     return {
         "Ticker": tk,
+        "Nombre": name,
         "Sector": info.get("sector", "Unknown"),
+        "País": country,
+        "Industria": industry,
         "Precio": price,
         "P/E": info.get("trailingPE"),
         "P/B": info.get("priceToBook"),
@@ -246,7 +249,7 @@ def main():
         # Sección 1: Resumen General
         # =====================================================
         st.header("📋 Resumen General (agrupado por Sector)")
-        resumen_cols = ["Ticker", "Sector", "Precio", "P/E", "P/B", "P/FCF",
+        resumen_cols = ["Ticker", "Nombre", "País", "Sector", "Industria", "Precio", "P/E", "P/B", "P/FCF",
                         "Dividend Yield %", "Payout Ratio", "ROA", "ROE",
                         "Current Ratio", "Debt/Eq", "Oper Margin", "Profit Margin",
                         "WACC", "ROIC", "EVA"]
