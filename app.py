@@ -90,9 +90,7 @@ def sector_sorted(df):
     return df.sort_values(["SectorRank", "Sector", "Ticker"]).reset_index(drop=True)
 
 def auto_ylim(ax, values, pad=0.10):
-    """Ajuste automático del eje Y.
-    values puede ser una Serie o un DataFrame; ignora NaNs.
-    """
+    """Ajuste automático del eje Y."""
     if isinstance(values, pd.DataFrame):
         arr = values.to_numpy(dtype="float64")
     else:
@@ -105,7 +103,6 @@ def auto_ylim(ax, values, pad=0.10):
     vmin = float(np.nanmin(arr))
     vmax = float(np.nanmax(arr))
 
-    # Si todos son NaN o 0, deja un rango pequeño
     if vmax == vmin:
         ymin = vmin - abs(vmin)*pad - 1
         ymax = vmax + abs(vmax)*pad + 1
@@ -117,7 +114,7 @@ def auto_ylim(ax, values, pad=0.10):
         ymax = vmax * (1 + pad)
     elif vmax <= 0:
         ymax = 0
-        ymin = vmin * (1 + pad)  # más negativo
+        ymin = vmin * (1 + pad)
     else:
         m = max(abs(vmin), abs(vmax)) * (1 + pad)
         ymin, ymax = -m, m
@@ -169,10 +166,10 @@ def obtener_datos_financieros(tk, Tc_def):
 
     return {
         "Ticker": tk,
-        "Nombre": info.get("longName", ""),
-        "País": info.get("country", ""),
+        "Nombre": info.get("longName", "N/D"),
+        "País": info.get("country", "N/D"),
+        "Industria": info.get("industry", "N/D"),
         "Sector": info.get("sector", "Unknown"),
-        "Industria": info.get("industry", ""),
         "Precio": price,
         "P/E": info.get("trailingPE"),
         "P/B": info.get("priceToBook"),
@@ -202,11 +199,9 @@ def obtener_datos_financieros(tk, Tc_def):
 def main():
     st.title("📊 Dashboard de Análisis Financiero Avanzado")
 
-    # ---------- Sidebar ----------
     with st.sidebar:
         st.header("⚙️ Configuración")
-        t_in = st.text_area("Tickers (coma)",
-                            "HRL, AAPL, MSFT, ABT, O, XOM, KO, JNJ, CLX, CHD, CB, DDOG")
+        t_in = st.text_area("Tickers (coma)", "HRL, AAPL, MSFT, ABT, O, XOM, KO, JNJ, CLX, CHD, CB, DDOG")
         max_t = st.slider("Máx tickers", 1, 100, 30)
         st.markdown("---")
         global Rf, Rm, Tc0
@@ -216,7 +211,6 @@ def main():
 
     tickers = [t.strip().upper() for t in t_in.split(",") if t.strip()][:max_t]
 
-    # ---------- Botón Analizar ----------
     if st.button("🔍 Analizar", type="primary"):
         if not tickers:
             st.warning("Ingresa al menos un ticker")
@@ -237,27 +231,18 @@ def main():
             if errs: st.table(pd.DataFrame(errs))
             return
 
-        # df para cálculos y gráficos (numérico)
         df = sector_sorted(pd.DataFrame(datos))
 
-        # copia para display con % formateados
         df_disp = df.copy()
         for col in ["Dividend Yield %", "Payout Ratio", "ROA", "ROE", "Oper Margin", "Profit Margin", "WACC", "ROIC"]:
             df_disp[col] = df_disp[col].apply(lambda x: f"{x*100:,.2f}%" if pd.notnull(x) else "N/D")
 
-        # =====================================================
-        # Sección 1: Resumen General
-        # =====================================================
         st.header("📋 Resumen General (agrupado por Sector)")
-        resumen_cols = ["Ticker", "Nombre", "País", "Sector", "Industria", "Precio", "P/E", "P/B", "P/FCF",
+        resumen_cols = ["Ticker", "Nombre", "País", "Industria", "Sector", "Precio", "P/E", "P/B", "P/FCF",
                         "Dividend Yield %", "Payout Ratio", "ROA", "ROE",
                         "Current Ratio", "Debt/Eq", "Oper Margin", "Profit Margin",
                         "WACC", "ROIC", "EVA"]
-        st.dataframe(
-            df_disp[resumen_cols].dropna(how='all', axis=1),
-            use_container_width=True,
-            height=420
-        )
+        st.dataframe(df_disp[resumen_cols].dropna(how='all', axis=1), use_container_width=True, height=420)
 
         if errs:
             st.subheader("🚫 Tickers con error")
